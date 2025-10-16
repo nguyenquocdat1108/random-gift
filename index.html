@@ -83,8 +83,8 @@ document.getElementById('btn').addEventListener('click', async () => {
   try {
     const res = await fetch(API_URL, {
       method: "POST",
-      mode: "cors",
       body: JSON.stringify({name}),
+      mode: "cors",
       headers: {"Content-Type": "application/json"}
     });
     const data = await res.json();
