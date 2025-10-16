@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>🎁 Rút quà ngẫu nhiên</title>
+<style>
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background: linear-gradient(180deg,#f0f4ff,#e8f0ff);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  margin: 0;
+}
+.card {
+  background: white;
+  padding: 30px;
+  border-radius: 18px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  text-align: center;
+  width: 90%;
+  max-width: 400px;
+  transition: transform 0.3s ease;
+}
+.card:hover { transform: scale(1.02); }
+h1 {
+  font-size: 1.6rem;
+  margin-bottom: 20px;
+  color: #004aad;
+}
+input {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  width: 100%;
+  margin-bottom: 12px;
+  font-size: 1rem;
+}
+button {
+  padding: 12px 20px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  width: 100%;
+  transition: background 0.3s;
+}
+button:hover { background: #0056c7; }
+button:disabled { background: #bbb; cursor: not-allowed; }
+.result {
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin-top: 20px;
+  color: #333;
+  min-height: 60px;
+}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>🎉 Chọn quà may mắn</h1>
+  <input type="text" id="name" placeholder="Nhập họ và tên của bạn">
+  <button id="btn">Chọn quà</button>
+  <div class="result" id="result"></div>
+</div>
+
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycbwCOfNMfW4qKzsW-8fMGIexMtntEzbN98IbNef-RtGA2sTfi-7cNbrwO-qaDCpoRMEK/exec";
+
+document.getElementById('btn').addEventListener('click', async () => {
+  const name = document.getElementById('name').value.trim();
+  if (!name) {
+    alert("Vui lòng nhập họ và tên!");
+    return;
+  }
+  document.getElementById('btn').disabled = true;
+  document.getElementById('result').textContent = "🎲 Đang chọn quà...";
+  
+  try {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      body: JSON.stringify({name}),
+      headers: {"Content-Type": "application/json"}
+    });
+    const data = await res.json();
+    if (data.status === "ok") {
+      document.getElementById('result').innerHTML = `🎁 Chúc mừng ${name}!<br>Bạn nhận được: <b>${data.gift}</b>`;
+    } else {
+      document.getElementById('result').innerHTML = data.message;
+    }
+  } catch (e) {
+    document.getElementById('result').textContent = "⚠️ Lỗi kết nối. Thử lại sau!";
+  } finally {
+    document.getElementById('btn').disabled = false;
+  }
+});
+</script>
+</body>
+</html>
