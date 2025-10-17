@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trang quản trị quà tặng 🎁</title>
+  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-database-compat.js"></script>
+  <style>
+    body {
+      font-family: "Segoe UI", sans-serif;
+      background: #f5f5f5;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+    }
+    h1 {
+      color: #d62828;
+    }
+    .hidden { display: none; }
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      font-size: 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin: 10px;
+    }
+    button:hover { background: #0056b3; }
+    table {
+      margin: 20px auto;
+      border-collapse: collapse;
+      width: 80%;
+    }
+    th, td {
+      padding: 8px 12px;
+      border: 1px solid #ccc;
+      text-align: center;
+    }
+    th {
+      background: #007bff;
+      color: white;
+    }
+    #loginBox {
+      background: white;
+      border-radius: 12px;
+      padding: 30px;
+      max-width: 400px;
+      margin: 100px auto;
+      box-shadow: 0 0 12px rgba(0,0,0,0.1);
+    }
+    input {
+      padding: 10px;
+      font-size: 16px;
+      width: 80%;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="loginBox">
+    <h2>🔐 Đăng nhập quản trị</h2>
+    <input type="password" id="passwordInput" placeholder="Nhập mật khẩu..." />
+    <br />
+    <button onclick="checkPassword()">Đăng nhập</button>
+    <p id="loginError" style="color:red; display:none;">❌ Sai mật khẩu!</p>
+  </div>
+
+  <div id="adminPanel" class="hidden">
+    <h1>🎁 Bảng điều khiển quà tặng</h1>
+    <button onclick="resetData()">🔁 Reset toàn bộ quà & danh sách</button>
+    <h2>📦 Số lượng quà hiện tại</h2>
+    <table id="giftTable">
+      <thead>
+        <tr><th>Loại quà</th><th>Số lượng còn</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <h2>👥 Danh sách người nhận</h2>
+    <table id="winnerTable">
+      <thead>
+        <tr><th>Họ tên</th><th>Quà nhận</th><th>Thời gian</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <script>
+    // --- Mật khẩu admin ---
+    const ADMIN_PASSWORD = "dat2025";
+
+    function checkPassword() {
+      const input = document.getElementById("passwordInput").value;
+      if (input === ADMIN_PASSWORD) {
+        document.getElementById("loginBox").classList.add("hidden");
+        document.getElementById("adminPanel").classList.remove("hidden");
+        initFirebase();
+      } else {
+        document.getElementById("loginError").style.display = "block";
+      }
+    }
+
+    // --- Firebase cấu hình ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyCuPgeWQSGFB5QDEjwJO8MyLSWF4XrLr7c",
+      authDomain: "random-gift-event.firebaseapp.com",
+      databaseURL: "https://random-gift-event-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "random-gift-event",
+      storageBucket: "random-gift-event.firebasestorage.app",
+      messagingSenderId: "388826948849",
+      appId: "1:388826948849:web:f0251d566af9af90af3550"
+    };
+
+    let db;
+
+    function initFirebase() {
+      firebase.initializeApp(firebaseConfig);
+      db = firebase.database();
+
+      // Theo dõi realtime gifts
+      db.ref("gifts").on("value", snapshot => {
+        const data = snapshot.val();
+        const tbody = document.querySelector("#giftTable tbody");
+        tbody.innerHTML = "";
+        for (let key in data) {
+          const row = `<tr><td>${key}</td><td>${data[key]}</td></tr>`;
+          tbody.innerHTML += row;
+        }
+      });
+
+      // Theo dõi realtime winners
+      db.ref("winners").on("value", snapshot => {
+        const data = snapshot.val();
+        const tbody = document.querySelector("#winnerTable tbody");
+        tbody.innerHTML = "";
+        if (data) {
+          Object.values(data).forEach(entry => {
+            const row = `<tr><td>${entry.name}</td><td>${entry.gift}</td><td>${new Date(entry.time).toLocaleString()}</td></tr>`;
+            tbody.innerHTML += row;
+          });
+        }
+      });
+    }
+
+    // --- Reset dữ liệu ---
+    function resetData() {
+      if (!confirm("⚠️ Bạn có chắc muốn reset toàn bộ dữ liệu không?")) return;
+
+      const giftsRef = db.ref("gifts");
+      const winnersRef = db.ref("winners");
+
+      giftsRef.set({
+        "Khăn lụa": 4,
+        "Cặp tóc": 12,
+        "Gương+lược": 10,
+        "Cốc": 2
+      });
+
+      winnersRef.remove();
+
+      alert("✅ Đã reset dữ liệu thành công!");
+    }
+  </script>
+
+</body>
+</html>
