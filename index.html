@@ -2,103 +2,121 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>🎁 Rút quà ngẫu nhiên</title>
+<title>Chọn quà ngẫu nhiên 🎁</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js"></script>
 <style>
 body {
-  font-family: 'Segoe UI', sans-serif;
-  background: linear-gradient(180deg,#f0f4ff,#e8f0ff);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  margin: 0;
-}
-.card {
-  background: white;
-  padding: 30px;
-  border-radius: 18px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  font-family: Arial, sans-serif;
   text-align: center;
-  width: 90%;
-  max-width: 400px;
-  transition: transform 0.3s ease;
-}
-.card:hover { transform: scale(1.02); }
-h1 {
-  font-size: 1.6rem;
-  margin-bottom: 20px;
-  color: #004aad;
+  margin-top: 60px;
+  background: #fafafa;
 }
 input {
   padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  width: 100%;
-  margin-bottom: 12px;
-  font-size: 1rem;
+  font-size: 16px;
+  width: 220px;
 }
 button {
-  padding: 12px 20px;
-  background: #007bff;
+  padding: 10px 20px;
+  font-size: 18px;
+  margin-top: 10px;
+  background: #0078d4;
   color: white;
   border: none;
-  border-radius: 8px;
-  font-size: 1rem;
+  border-radius: 6px;
   cursor: pointer;
-  width: 100%;
-  transition: background 0.3s;
 }
-button:hover { background: #0056c7; }
-button:disabled { background: #bbb; cursor: not-allowed; }
-.result {
-  font-size: 1.3rem;
-  font-weight: 600;
-  margin-top: 20px;
-  color: #333;
-  min-height: 60px;
+button:hover {
+  background: #005fa3;
+}
+#result {
+  font-size: 22px;
+  font-weight: bold;
+  margin-top: 25px;
+  color: #0077cc;
+}
+#loading {
+  display: none;
+  font-size: 18px;
+  color: #999;
 }
 </style>
 </head>
 <body>
-<div class="card">
-  <h1>🎉 Chọn quà may mắn</h1>
-  <input type="text" id="name" placeholder="Nhập họ và tên của bạn">
-  <button id="btn">Chọn quà</button>
-  <div class="result" id="result"></div>
-</div>
+<h2>🎁 Chương trình chọn quà ngẫu nhiên 🎁</h2>
+<p>Nhập họ và tên của bạn để nhận quà:</p>
+<input id="nameInput" placeholder="Ví dụ: Nguyễn Văn A" />
+<br>
+<button onclick="pickGift()">Chọn quà</button>
+<p id="loading">Đang chọn quà...</p>
+<div id="result"></div>
 
-<script>
-const API_URL = "https://script.google.com/macros/s/AKfycbxqZVKGfsoV0EERE27Xjd1gAGeyk6bKom4uqDFTYtdY0WJ9oqW0WcoIEQinUyu6G0tO/exec";
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, get, set, push } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-document.getElementById('btn').addEventListener('click', async () => {
-  const name = document.getElementById('name').value.trim();
-  if (!name) {
-    alert("Vui lòng nhập họ và tên!");
-    return;
-  }
-  document.getElementById('btn').disabled = true;
-  document.getElementById('result').textContent = "🎲 Đang chọn quà...";
-  
-  try {
-    const res = await fetch(API_URL, {
-      method: "POST",
-      body: JSON.stringify({name}),
-      mode: "cors",
-      headers: {"Content-Type": "application/json"}
-    });
-    const data = await res.json();
-    if (data.status === "ok") {
-      document.getElementById('result').innerHTML = `🎁 Chúc mừng ${name}!<br>Bạn nhận được: <b>${data.gift}</b>`;
-    } else {
-      document.getElementById('result').innerHTML = data.message;
+  // ✅ Cấu hình Firebase của bạn
+  const firebaseConfig = {
+    apiKey: "AIzaSyCuPgeWQSGFB5QDEjwJO8MyLSWF4XrLr7c",
+    authDomain: "random-gift-event.firebaseapp.com",
+    databaseURL: "https://random-gift-event-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "random-gift-event",
+    storageBucket: "random-gift-event.firebasestorage.app",
+    messagingSenderId: "388826948849",
+    appId: "1:388826948849:web:b07f231ea1e2f8caaf3550"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  async function pickGift() {
+    const nameInput = document.getElementById("nameInput");
+    const name = nameInput.value.trim();
+    const resultDiv = document.getElementById("result");
+    const loading = document.getElementById("loading");
+
+    if (!name) {
+      alert("Vui lòng nhập họ và tên!");
+      return;
     }
-  } catch (e) {
-    document.getElementById('result').textContent = "⚠️ Lỗi kết nối. Thử lại sau!";
-  } finally {
-    document.getElementById('btn').disabled = false;
+
+    resultDiv.textContent = "";
+    loading.style.display = "block";
+
+    try {
+      const snapshot = await get(ref(db, "gifts"));
+      const gifts = snapshot.val();
+
+      const available = Object.keys(gifts).filter(k => gifts[k] > 0);
+      if (available.length === 0) {
+        resultDiv.textContent = "🎉 Tất cả quà đã được nhận hết!";
+        loading.style.display = "none";
+        return;
+      }
+
+      const randomGift = available[Math.floor(Math.random() * available.length)];
+      const remaining = gifts[randomGift] - 1;
+
+      // Cập nhật số lượng còn lại và lưu người nhận
+      await set(ref(db, "gifts/" + randomGift), remaining);
+      await push(ref(db, "winners"), {
+        name,
+        gift: randomGift,
+        time: new Date().toISOString()
+      });
+
+      loading.style.display = "none";
+      resultDiv.innerHTML = `🎉 Xin chúc mừng <b>${name}</b>!<br>Bạn nhận được: <b>${randomGift}</b> 🎁`;
+
+      nameInput.value = "";
+    } catch (err) {
+      loading.style.display = "none";
+      resultDiv.textContent = "⚠️ Lỗi kết nối tới máy chủ: " + err.message;
+    }
   }
-});
+
+  window.pickGift = pickGift;
 </script>
 </body>
 </html>
